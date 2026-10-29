@@ -58,6 +58,10 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
     private var saveActionPopup: NSPopUpButton!
     private var copyPathAfterSaveCheckbox: NSButton!
     private var ocrActionPopup: NSPopUpButton!
+    private var ocrEnginePopup: NSPopUpButton!
+    private var ocrEditor: AIProviderEditor!
+    private var translationProviderPopup: NSPopUpButton!
+    private var aiTranslationEditor: AIProviderEditor!
     private var copySoundCheckbox: NSButton!
     // rememberSelectionCheckbox removed — selection is always saved for "Capture Last Area"
     private var rememberToolCheckbox: NSButton!
@@ -191,6 +195,9 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
         }
         window.toolbar = toolbar
         toolbar.selectedItemIdentifier = NSToolbarItem.Identifier("general")
+        // Keep the tab strip centred when the window gets wider: flexible
+        // space on both sides splits the leftover width evenly, so the tabs
+        // stay centred whatever the window width is.
         // Re-apply content size after toolbar install, since NSToolbar can
         // resize the window to fit its items.
         //
@@ -200,7 +207,11 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
         // the old layout). The extra 60pt flows evenly across the two
         // toggle-grid columns so Polish/German/Dutch labels fit on one
         // line instead of wrapping.
-        window.setContentSize(NSSize(width: 620, height: 520))
+        //
+        // 620 → 660: the BYOK provider editor adds a label column plus
+        // template fields, and at 620 the right-hand text fields ran past the
+        // container edge.
+        window.setContentSize(NSSize(width: 700, height: 520))
 
         // Build all tab content views up front (preserves existing behavior — nothing lazy-created)
         tabContentViews["general"]   = makeGeneralTabView()
@@ -223,26 +234,42 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
         sep.boxType = .separator
         sep.translatesAutoresizingMaskIntoConstraints = false
 
-        // Footer labels
-        let madeBy = NSTextField(labelWithString: "\(L("Made by")) sw33tLie")
+        // Footer: this fork is made by Samuelonly, built from sw33tLie's
+        // original macshot. Both links stay clickable, so the credit is clear.
+        let madeBy = NSTextField(labelWithString: "\(L("Made by")) Samuelonly")
         madeBy.font = NSFont.systemFont(ofSize: 11)
         madeBy.textColor = .secondaryLabelColor
         madeBy.translatesAutoresizingMaskIntoConstraints = false
 
-        let linkBtn = NSButton(title: "github.com/sw33tLie/macshot", target: self, action: #selector(openGitHub))
+        let linkBtn = NSButton(title: "github.com/Samuelonly", target: self, action: #selector(openGitHub))
         linkBtn.bezelStyle = .inline
         linkBtn.isBordered = false
         linkBtn.font = NSFont.systemFont(ofSize: 11)
-        linkBtn.attributedTitle = NSAttributedString(string: "github.com/sw33tLie/macshot", attributes: [
+        linkBtn.attributedTitle = NSAttributedString(string: "github.com/Samuelonly", attributes: [
             .font: NSFont.systemFont(ofSize: 11),
             .foregroundColor: NSColor.linkColor,
             .underlineStyle: NSUnderlineStyle.single.rawValue,
         ])
         linkBtn.translatesAutoresizingMaskIntoConstraints = false
 
-        let footerStack = NSStackView(views: [madeBy, NSView(), linkBtn])
+        let fromLabel = NSTextField(labelWithString: L("From"))
+        fromLabel.font = NSFont.systemFont(ofSize: 11)
+        fromLabel.textColor = .secondaryLabelColor
+        fromLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        let upstreamBtn = NSButton(title: "github.com/sw33tLie/macshot", target: self, action: #selector(openUpstreamGitHub))
+        upstreamBtn.bezelStyle = .inline
+        upstreamBtn.isBordered = false
+        upstreamBtn.attributedTitle = NSAttributedString(string: "github.com/sw33tLie/macshot", attributes: [
+            .font: NSFont.systemFont(ofSize: 11),
+            .foregroundColor: NSColor.linkColor,
+            .underlineStyle: NSUnderlineStyle.single.rawValue,
+        ])
+        upstreamBtn.translatesAutoresizingMaskIntoConstraints = false
+
+        let footerStack = NSStackView(views: [madeBy, NSView(), linkBtn, fromLabel, upstreamBtn])
         footerStack.orientation = .horizontal
-        footerStack.spacing = 0
+        footerStack.spacing = 6
         footerStack.translatesAutoresizingMaskIntoConstraints = false
 
         cv.addSubview(container)
@@ -286,6 +313,7 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
             view.bottomAnchor.constraint(equalTo: container.bottomAnchor),
         ])
         currentTabID = id
+        window?.toolbar?.selectedItemIdentifier = NSToolbarItem.Identifier(id)
         window?.title = "\(BuildVariant.displayName) \(L("Settings")) · \(L(Self.tabDefs.first(where: { $0.id == id })?.label ?? ""))"
         #if !OFFLINE
         if id == "uploads" {
@@ -300,8 +328,14 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
 
     // MARK: - NSToolbarDelegate
 
-    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+    /// Flexible space on either side of the tabs is what centres them: each
+    /// one takes half of the leftover width.
+    private func tabItemIdentifiers() -> [NSToolbarItem.Identifier] {
         return Self.tabDefs.map { NSToolbarItem.Identifier($0.id) }
+    }
+
+    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        return [.flexibleSpace] + tabItemIdentifiers() + [.flexibleSpace]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -309,7 +343,7 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
     }
 
     func toolbarSelectableItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        return toolbarDefaultItemIdentifiers(toolbar)
+        return tabItemIdentifiers()
     }
 
     func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
@@ -781,6 +815,19 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
         stack.addArrangedSubview(labeledRow(L("OCR & QR Capture:"), controls: [ocrActionPopup]))
         stack.setCustomSpacing(12, after: stack.arrangedSubviews.last!)
 
+        // OCR engine: local Vision out of the box, cloud OCR only when set up.
+        ocrEnginePopup = NSPopUpButton()
+        ocrEnginePopup.addItems(withTitles: OCREngine.allCases.map(\.title))
+        ocrEnginePopup.selectItem(at: OCREngine.allCases.firstIndex(of: OCREngine.current) ?? 0)
+        ocrEnginePopup.target = self
+        ocrEnginePopup.action = #selector(ocrEngineChanged(_:))
+        stack.addArrangedSubview(labeledRow(L("OCR Engine:"), controls: [ocrEnginePopup]))
+
+        ocrEditor = AIProviderEditor(role: .ocr)
+        ocrEditor.isHidden = OCREngine.current != .cloud
+        stack.addArrangedSubview(indented(ocrEditor))
+        stack.setCustomSpacing(12, after: stack.arrangedSubviews.last!)
+
         // Checkboxes
         copySoundCheckbox = NSButton(checkboxWithTitle: L("Play sound on capture"), target: self, action: #selector(copySoundChanged(_:)))
         rememberToolCheckbox = NSButton(checkboxWithTitle: L("Remember last selected tool"), target: self, action: #selector(rememberToolChanged(_:)))
@@ -1050,35 +1097,36 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
         stack.setCustomSpacing(20, after: stack.arrangedSubviews.last!)
 
         // ── Translation ──────────────────────────────────────
-        if TranslationService.appleTranslationAvailable {
-            stack.addArrangedSubview(sectionHeader(L("Translation")))
-            stack.setCustomSpacing(10, after: stack.arrangedSubviews.last!)
+        stack.addArrangedSubview(sectionHeader(L("Translation")))
+        stack.setCustomSpacing(10, after: stack.arrangedSubviews.last!)
 
-            let translationProviderPopup = NSPopUpButton()
-            translationProviderPopup.addItems(withTitles: [
-                L("Apple (on-device)"),
-                L("Google Translate"),
-            ])
-            translationProviderPopup.selectItem(at: TranslationService.provider == .apple ? 0 : 1)
-            translationProviderPopup.target = self
-            translationProviderPopup.action = #selector(translationProviderChanged(_:))
-            stack.addArrangedSubview(labeledRow(L("Engine:"), controls: [translationProviderPopup]))
-            stack.setCustomSpacing(4, after: stack.arrangedSubviews.last!)
+        translationProviderPopup = NSPopUpButton()
+        translationProviderPopup.addItems(withTitles: TranslationProvider.allCases.map(\.title))
+        translationProviderPopup.selectItem(at: TranslationProvider.allCases.firstIndex(of: TranslationService.provider) ?? 0)
+        translationProviderPopup.target = self
+        translationProviderPopup.action = #selector(translationProviderChanged(_:))
+        stack.addArrangedSubview(labeledRow(L("Engine:"), controls: [translationProviderPopup]))
+        stack.setCustomSpacing(4, after: stack.arrangedSubviews.last!)
 
-            let providerNote = NSTextField(wrappingLabelWithString: L("Apple translation is faster and works offline. Google Translate supports more languages."))
-            providerNote.font = NSFont.systemFont(ofSize: 10)
-            providerNote.textColor = .secondaryLabelColor
-            stack.addArrangedSubview(indented(providerNote))
-            stack.setCustomSpacing(4, after: stack.arrangedSubviews.last!)
+        let providerNote = NSTextField(wrappingLabelWithString: L("Bring your own service: any OpenAI-compatible API, or a service with its own HTTP and JSON shape. Apple translation works offline; the Google option uses an unofficial endpoint and can be unstable."))
+        providerNote.font = NSFont.systemFont(ofSize: 10)
+        providerNote.textColor = .secondaryLabelColor
+        providerNote.preferredMaxLayoutWidth = 460
+        stack.addArrangedSubview(indented(providerNote))
+        stack.setCustomSpacing(8, after: stack.arrangedSubviews.last!)
 
-            let downloadLink = NSButton(title: L("Download language packs in System Settings…"), target: self, action: #selector(openTranslationSettings))
-            downloadLink.bezelStyle = .inline
-            downloadLink.isBordered = false
-            downloadLink.contentTintColor = .linkColor
-            downloadLink.font = NSFont.systemFont(ofSize: 10)
-            stack.addArrangedSubview(indented(downloadLink))
-            stack.setCustomSpacing(20, after: stack.arrangedSubviews.last!)
-        }
+        aiTranslationEditor = AIProviderEditor(role: .translation)
+        aiTranslationEditor.isHidden = TranslationService.provider != .custom
+        stack.addArrangedSubview(indented(aiTranslationEditor))
+        stack.setCustomSpacing(6, after: stack.arrangedSubviews.last!)
+
+        let downloadLink = NSButton(title: L("Download language packs in System Settings…"), target: self, action: #selector(openTranslationSettings))
+        downloadLink.bezelStyle = .inline
+        downloadLink.isBordered = false
+        downloadLink.contentTintColor = .linkColor
+        downloadLink.font = NSFont.systemFont(ofSize: 10)
+        stack.addArrangedSubview(indented(downloadLink))
+        stack.setCustomSpacing(20, after: stack.arrangedSubviews.last!)
 
         // ── Menu Bar Order ──────────────────────────────────
         stack.addArrangedSubview(sectionHeader(L("Menu Bar Order")))
@@ -2889,6 +2937,9 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
         LanguageManager.shared.currentLanguage = languages[idx].code
     }
     @objc private func openGitHub() {
+        if let url = URL(string: "https://github.com/Samuelonly") { NSWorkspace.shared.open(url) }
+    }
+    @objc private func openUpstreamGitHub() {
         if let url = URL(string: "https://github.com/sw33tLie/macshot") { NSWorkspace.shared.open(url) }
     }
     @objc private func imageFormatChanged(_ sender: NSPopUpButton) {
@@ -3398,7 +3449,22 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
     }
 
     @objc private func translationProviderChanged(_ sender: NSPopUpButton) {
-        TranslationService.provider = sender.indexOfSelectedItem == 0 ? .apple : .google
+        // Keep whatever was typed before switching engines.
+        aiTranslationEditor?.save()
+        let index = sender.indexOfSelectedItem
+        if index >= 0, index < TranslationProvider.allCases.count {
+            TranslationService.provider = TranslationProvider.allCases[index]
+        }
+        aiTranslationEditor?.isHidden = TranslationService.provider != .custom
+    }
+
+    @objc private func ocrEngineChanged(_ sender: NSPopUpButton) {
+        ocrEditor?.save()
+        let index = sender.indexOfSelectedItem
+        if index >= 0, index < OCREngine.allCases.count {
+            OCREngine.current = OCREngine.allCases[index]
+        }
+        ocrEditor?.isHidden = OCREngine.current != .cloud
     }
 
     @objc private func openTranslationSettings() {

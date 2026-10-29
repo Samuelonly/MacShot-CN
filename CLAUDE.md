@@ -6,7 +6,7 @@ Native macOS screenshot & annotation tool inspired by Flameshot. Built with Swif
 
 - **Language:** Swift 5.0
 - **UI:** AppKit (all windows created in code, storyboard is minimal — just app entry + main menu)
-- **Min Target:** macOS 12.3+ (Monterey)
+- **Min Target:** macOS 15.0+ (Sequoia)
 - **Bundle ID:** com.sw33tlie.macshot.macshot
 - **Sandbox:** Enabled (entitlements: network.client, files.user-selected.read-write, files.bookmarks.app-scope)
 - **LSUIElement:** YES (menu bar only app, no dock icon — switches to `.regular` when editor windows are open)

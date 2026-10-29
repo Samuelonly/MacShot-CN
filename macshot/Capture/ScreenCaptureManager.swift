@@ -96,7 +96,7 @@ class ScreenCaptureManager {
                 height: screen.frame.height)
             timing?("CGWindowListCreateImage begin screen=\(index)")
             guard
-                let image = CGWindowListCreateImage(
+                let image = LegacyCGCapture.createImage(
                     cgRect, .optionAll, kCGNullWindowID, .bestResolution
                 )
             else {
@@ -469,7 +469,7 @@ class ScreenCaptureManager {
                                     height: screen.frame.height)
                                 timing?("fallback CGWindowListCreateImage begin display=\(index)")
                                 guard
-                                    let image = CGWindowListCreateImage(
+                                    let image = LegacyCGCapture.createImage(
                                         cgRect, .optionAll, kCGNullWindowID, .bestResolution
                                     )
                                 else {
@@ -509,7 +509,7 @@ class ScreenCaptureManager {
     /// On macOS 12–13, uses `CGWindowListCreateImage` targeting the specific window.
     static func captureWindow(windowID: CGWindowID, screen: NSScreen) async -> CGImage? {
         func captureViaWindowList() -> CGImage? {
-            CGWindowListCreateImage(.null, .optionIncludingWindow, windowID, .bestResolution)
+            LegacyCGCapture.createImage(.null, .optionIncludingWindow, windowID, .bestResolution)
         }
 
         if #available(macOS 14.0, *) {

@@ -859,3 +859,68 @@
 "Sway" = "Balanceig";
 
 "Snap webcam to corners when moved" = "Ajusta la càmera web a les cantonades en moure-la";
+
+/* New BYOK and cloud OCR strings. */
+"From" = "De";
+"Custom service (your key)" = "Servei personalitzat (la teva clau)";
+"Google Translate (unofficial)" = "Google Translate (no oficial)";
+"OpenAI-compatible API" = "API compatible amb OpenAI";
+"HTTP template" = "Plantilla HTTP";
+"Request:" = "Sol·licitud:";
+"Base URL:" = "URL base:";
+"Model:" = "Model:";
+"Prompt:" = "Indicació:";
+"Method:" = "Mètode:";
+"URL:" = "URL:";
+"Headers:" = "Capçaleres:";
+"Body:" = "Cos:";
+"Response path:" = "Ruta de la resposta:";
+"Timeout:" = "Temps d'espera:";
+"API key (stored in Keychain)" = "Clau de l'API (desada al clauer)";
+"Key saved; type to replace" = "Clau desada; escriu per substituir-la";
+"System prompt; {{to}} becomes the target language" = "Indicació del sistema; {{to}} es converteix en l'idioma de destí";
+"Model, like gpt-4o-mini" = "Model, com ara gpt-4o-mini";
+"Timeout in seconds" = "Temps d'espera en segons";
+"Testing…" = "Provant…";
+"Connected. “Hello” → “%@” in %.1f s." = "Connectat. «Hello» → «%@» en %.1f s.";
+"Could not build a test image." = "No s'ha pogut crear una imatge de prova.";
+"Connected, but the service returned no text." = "Connectat, però el servei no ha retornat cap text.";
+"Connected. Read: “%@”" = "Connectat. Llegit: «%@»";
+"Your key is kept in the Keychain and is never included in settings backups." = "La teva clau es desa al clauer i mai s'inclou a les còpies de seguretat dels ajustos.";
+"The image is sent as base64. Use {{imageBase64}} in the URL, headers or body, and {{imageMime}} for the type." = "La imatge s'envia com a base64. Fes servir {{imageBase64}} a l'URL, les capçaleres o el cos, i {{imageMime}} per al tipus.";
+"Could not encode the image for OCR." = "No s'ha pogut codificar la imatge per a l'OCR.";
+"Local Vision (on-device)" = "Vision local (al dispositiu)";
+"Custom cloud OCR (your key)" = "OCR al núvol personalitzat (la teva clau)";
+"OCR Engine:" = "Motor d'OCR:";
+"Bring your own service: any OpenAI-compatible API, or a service with its own HTTP and JSON shape. Apple translation works offline; the Google option uses an unofficial endpoint and can be unstable." = "Fes servir el teu propi servei: qualsevol API compatible amb OpenAI, o un servei amb el seu propi format HTTP i JSON. La traducció d'Apple funciona sense connexió; l'opció de Google fa servir un punt de connexió no oficial i pot ser inestable.";
+"No translation service is configured. Add your own provider in Settings › Capture › Translation." = "No hi ha cap servei de traducció configurat. Afegeix el teu proveïdor a Ajustos › Captura › Traducció.";
+"The API key is invalid or has no permission for this service." = "La clau de l'API no és vàlida o no té permís per a aquest servei.";
+"The service is rate limiting requests. Try again in a moment." = "El servei està limitant les sol·licituds. Torna-ho a provar d'aquí a un moment.";
+"The request timed out." = "La sol·licitud ha superat el temps d'espera.";
+"The service returned HTTP %d." = "El servei ha retornat HTTP %d.";
+"The response did not match the configured response path." = "La resposta no coincideix amb la ruta de resposta configurada.";
+"No network connection." = "No hi ha connexió de xarxa.";
+"The Base URL is not a valid address." = "L'URL base no és una adreça vàlida.";
+"The request URL is not valid." = "L'URL de la sol·licitud no és vàlid.";
+"The response did not contain the configured response path." = "La resposta no contenia la ruta de resposta configurada.";
+
+/* Untranslated: English source text until a translator picks it up. */
+"Check Again" = "Check Again";
+"Checking…" = "Checking…";
+"Screen Recording is allowed. Restart macshot to start capturing." = "Screen Recording is allowed. Restart macshot to start capturing.";
+"Restart macshot" = "Restart macshot";
+
+/* Untranslated: English source text until a translator picks it up. */
+"Tencent Cloud TMT" = "Tencent Cloud TMT";
+"Youdao Translate" = "Youdao Translate";
+"App secret (stored in Keychain)" = "App secret (stored in Keychain)";
+"App secret:" = "App secret:";
+"Secret saved; type to replace" = "Secret saved; type to replace";
+"Youdao returned error %@." = "Youdao returned error %@.";
+"This engine only translates text; it cannot read images." = "This engine only translates text; it cannot read images.";
+
+"Custom API" = "Custom API";
+"Google Gemini" = "Google Gemini";
+"DeepL" = "DeepL";
+"Volcengine Translate" = "Volcengine Translate";
+"DeepL API key (stored in Keychain)" = "DeepL API key (stored in Keychain)";

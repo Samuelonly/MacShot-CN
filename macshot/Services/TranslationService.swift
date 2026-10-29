@@ -4,9 +4,20 @@ import Combine
 import SwiftUI
 @preconcurrency import Translation
 
-enum TranslationProvider: String {
+enum TranslationProvider: String, CaseIterable {
+    case custom = "custom"
     case apple = "apple"
+    /// Kept for people who want it, marked as unstable: it is an
+    /// undocumented endpoint, not a service with terms and a key.
     case google = "google"
+
+    var title: String {
+        switch self {
+        case .custom: return L("Custom API")
+        case .apple: return L("Apple (on-device)")
+        case .google: return L("Google Translate (unofficial)")
+        }
+    }
 }
 
 enum TranslationService {
@@ -17,9 +28,20 @@ enum TranslationService {
         get {
             if let raw = UserDefaults.standard.string(forKey: "translationProvider"),
                let p = TranslationProvider(rawValue: raw) { return p }
-            return .google  // Google by default — Apple requires language pack downloads
+            // No engine out of the box: translation must be set up with the
+            // user's own service before it can run.
+            return .custom
         }
         set { UserDefaults.standard.set(newValue.rawValue, forKey: "translationProvider") }
+    }
+
+    /// Whether the selected engine can run right now.
+    static var isConfigured: Bool {
+        switch provider {
+        case .custom: return AIProviderConfig.load(.translation).isConfigured(.translation)
+        case .apple: return appleTranslationAvailable
+        case .google: return true
+        }
     }
 
     /// Whether Apple Translation is available on this system.
@@ -151,10 +173,85 @@ enum TranslationService {
             return
         }
 
-        if #available(macOS 15.0, *), provider == .apple {
-            translateBatchApple(texts: texts, targetLang: targetLang, completion: completion)
-        } else {
+        switch provider {
+        case .custom:
+            translateBatchCustom(texts: texts, targetLang: targetLang, completion: completion)
+        case .apple:
+            if #available(macOS 15.0, *) {
+                translateBatchApple(texts: texts, targetLang: targetLang, completion: completion)
+            } else {
+                completion(.failure(AIProviderError.notConfigured))
+            }
+        case .google:
             translateBatchGoogle(texts: texts, targetLang: targetLang, completion: completion)
+        }
+    }
+
+    // MARK: - Custom service (BYOK)
+
+    /// The last translations, so the same line is not sent twice. Lines
+    /// repeat between captures and between opens of the OCR window.
+    private static let cache: NSCache<NSString, NSString> = {
+        let cache = NSCache<NSString, NSString>()
+        cache.countLimit = 500
+        return cache
+    }()
+
+    private static func translateBatchCustom(
+        texts: [String],
+        targetLang: String,
+        completion: @escaping (Result<[String], Error>) -> Void
+    ) {
+        let config = AIProviderConfig.load(.translation)
+        guard config.isConfigured(.translation) else {
+            completion(.failure(AIProviderError.notConfigured))
+            return
+        }
+
+        var results = Array(repeating: "", count: texts.count)
+        let group = DispatchGroup()
+        let lock = NSLock()
+        let semaphore = DispatchSemaphore(value: 3)
+        var firstError: Error?
+
+        for (i, text) in texts.enumerated() {
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else {
+                results[i] = text
+                continue
+            }
+            let key = "\(targetLang)|\(config.mode.rawValue)|\(config.baseURL)|\(trimmed)"
+            if let cached = cache.object(forKey: key as NSString) {
+                results[i] = cached as String
+                continue
+            }
+            group.enter()
+            DispatchQueue.global(qos: .userInitiated).async {
+                semaphore.wait()
+                AIProvider.translate(text: trimmed, to: targetLang, from: "auto",
+                                     config: config) { result in
+                    semaphore.signal()
+                    lock.lock()
+                    switch result {
+                    case .success(let translated):
+                        results[i] = translated
+                        cache.setObject(translated as NSString, forKey: key as NSString)
+                    case .failure(let error):
+                        if firstError == nil { firstError = error }
+                        results[i] = ""
+                    }
+                    lock.unlock()
+                    group.leave()
+                }
+            }
+        }
+
+        group.notify(queue: .main) {
+            if let error = firstError {
+                completion(.failure(error))
+            } else {
+                completion(.success(results))
+            }
         }
     }
 

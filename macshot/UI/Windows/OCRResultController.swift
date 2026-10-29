@@ -445,7 +445,27 @@ class OCRResultController: NSObject {
                 alert.messageText = L("Translation Failed")
                 alert.informativeText = error.localizedDescription
                 alert.alertStyle = .warning
-                if let window = self.window { alert.beginSheetModal(for: window) }
+                // Without a configured service there is somewhere to go;
+                // every other failure is something to read and retry.
+                let notConfigured: Bool
+                if case .notConfigured? = error as? AIProviderError {
+                    notConfigured = true
+                } else {
+                    notConfigured = false
+                }
+                // Both buttons are added explicitly so the response index does
+                // not depend on AppKit's implicit OK button.
+                alert.addButton(withTitle: L("OK"))
+                if notConfigured { alert.addButton(withTitle: L("Open Settings")) }
+                if let window = self.window {
+                    alert.beginSheetModal(for: window) { response in
+                        // Second button is "Open Settings" when it is there.
+                        if notConfigured, response == .alertSecondButtonReturn,
+                           window.isVisible {
+                            NSApp.sendAction(Selector(("openSettings")), to: nil, from: nil)
+                        }
+                    }
+                }
 
             case .success(let translated):
                 // Restore empty lines to preserve paragraph structure

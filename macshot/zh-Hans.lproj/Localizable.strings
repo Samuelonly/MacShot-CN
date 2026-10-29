@@ -389,6 +389,10 @@
 "Enable macshot, then try taking a screenshot" = "启用 macshot，然后尝试截图";
 "Open Screen Recording Settings" = "打开屏幕录制设置";
 "Continue" = "继续";
+"Check Again" = "重新检测";
+"Checking…" = "正在检测…";
+"Screen Recording is allowed. Restart macshot to start capturing." = "已允许屏幕录制。重新启动 macshot 后即可开始截图。";
+"Restart macshot" = "重新启动 macshot";
 
 /* OCR Window */
 "Text Recognition" = "文字识别";
@@ -859,3 +863,60 @@
 "Sway" = "摆动";
 
 "Snap webcam to corners when moved" = "移动时将摄像头吸附到角落";
+
+"From" = "源自";
+
+/* AI provider (BYOK) */
+"Custom service (your key)" = "自定义服务（用自己的 Key）";
+"Custom API" = "自定义 API";
+"Google Translate (unofficial)" = "Google 翻译（非官方接口）";
+"OpenAI-compatible API" = "OpenAI 兼容接口";
+"HTTP template" = "HTTP 模板";
+"Google Gemini" = "Google Gemini";
+"DeepL" = "DeepL";
+"Tencent Cloud TMT" = "腾讯云机器翻译（翻译君）";
+"Youdao Translate" = "有道翻译";
+"Volcengine Translate" = "火山翻译";
+"DeepL API key (stored in Keychain)" = "DeepL API Key（保存在钥匙串）";
+"App secret (stored in Keychain)" = "应用密钥（保存在钥匙串）";
+"App secret:" = "应用密钥:";
+"Secret saved; type to replace" = "密钥已保存；输入即替换";
+"Youdao returned error %@." = "有道返回错误 %@。";
+"This engine only translates text; it cannot read images." = "该引擎只支持文本翻译，不能识别图片。";
+"Request:" = "请求方式：";
+"Base URL:" = "Base URL：";
+"Model:" = "模型：";
+"Prompt:" = "系统提示词：";
+"Method:" = "方法：";
+"URL:" = "URL：";
+"Headers:" = "请求头：";
+"Body:" = "请求体：";
+"Response path:" = "响应路径：";
+"Timeout:" = "超时：";
+"API key (stored in Keychain)" = "API Key（保存在钥匙串）";
+"Key saved; type to replace" = "Key 已保存，输入可替换";
+"System prompt; {{to}} becomes the target language" = "系统提示词；{{to}} 会替换为目标语言";
+"Model, like gpt-4o-mini" = "模型，例如 gpt-4o-mini";
+"Timeout in seconds" = "超时秒数";
+"Testing…" = "测试中…";
+"Connected. “Hello” → “%@” in %.1f s." = "连接成功。“Hello” → “%@”，耗时 %.1f 秒。";
+"Could not build a test image." = "无法生成测试图片。";
+"Connected, but the service returned no text." = "连接成功，但服务没有返回文字。";
+"Connected. Read: “%@”" = "连接成功，识别到：“%@”";
+"Your key is kept in the Keychain and is never included in settings backups." = "Key 保存在钥匙串，不会写进设置备份。";
+"The image is sent as base64. Use {{imageBase64}} in the URL, headers or body, and {{imageMime}} for the type." = "图片以 base64 发送。可在 URL、请求头或请求体中使用 {{imageBase64}}，类型用 {{imageMime}}。";
+"Could not encode the image for OCR." = "无法编码图片用于 OCR。";
+"Local Vision (on-device)" = "本地 Vision（离线）";
+"Custom cloud OCR (your key)" = "自定义云 OCR（用自己的 Key）";
+"OCR Engine:" = "OCR 引擎：";
+"Bring your own service: any OpenAI-compatible API, or a service with its own HTTP and JSON shape. Apple translation works offline; the Google option uses an unofficial endpoint and can be unstable." = "自带服务：任意 OpenAI 兼容接口，或用自己的 HTTP + JSON 格式的服务。Apple 翻译可离线使用；Google 选项使用非官方接口，可能不稳定。";
+"No translation service is configured. Add your own provider in Settings › Capture › Translation." = "还没有配置翻译服务。请在 设置 › 捕获 › 翻译 中添加自己的服务。";
+"The API key is invalid or has no permission for this service." = "API Key 无效，或没有该服务的权限。";
+"The service is rate limiting requests. Try again in a moment." = "服务正在限流，请稍后再试。";
+"The request timed out." = "请求超时。";
+"The service returned HTTP %d." = "服务返回了 HTTP %d。";
+"The response did not match the configured response path." = "返回内容与配置的响应路径不匹配。";
+"No network connection." = "网络不可用。";
+"The Base URL is not a valid address." = "Base URL 不是有效的地址。";
+"The request URL is not valid." = "请求 URL 无效。";
+"The response did not contain the configured response path." = "返回内容中找不到配置的响应路径。";

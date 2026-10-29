@@ -1,5 +1,6 @@
 import Cocoa
 import CoreGraphics
+import ScreenCaptureKit
 
 /// A custom onboarding window shown on first launch (or when screen recording
 /// permission is missing). Guides the user step-by-step instead of letting
@@ -16,6 +17,9 @@ class PermissionOnboardingController: NSWindowController {
 
     private var pollTimer: Timer?
     private var permissionGranted = false
+    /// True while a ScreenCaptureKit probe is in flight — keeps the poll from
+    /// firing a second probe on top of the first.
+    private var isVerifying = false
 
     /// Someone who has used macshot before is asked to turn the permission
     /// back on (macOS can require it again after an update, e.g. when the
@@ -65,6 +69,8 @@ class PermissionOnboardingController: NSWindowController {
     private weak var statusLabel: NSTextField?
     private weak var actionButton: NSButton?
     private weak var continueButton: NSButton?
+    private weak var recheckButton: NSButton?
+    private weak var restartButton: NSButton?
     private weak var spinner: NSProgressIndicator?
     private weak var checkmark: NSTextField?
 
@@ -153,6 +159,16 @@ class PermissionOnboardingController: NSWindowController {
         cv.addSubview(openBtn)
         self.actionButton = openBtn
 
+        // Recheck button — the system switch can read "on" while the grant does
+        // not actually apply to this binary yet, so the user needs a way to ask
+        // again without waiting for the poll.
+        let recheckBtn = NSButton(title: L("Check Again"), target: self, action: #selector(checkAgainClicked))
+        recheckBtn.bezelStyle = .rounded
+        recheckBtn.controlSize = .large
+        recheckBtn.translatesAutoresizingMaskIntoConstraints = false
+        cv.addSubview(recheckBtn)
+        self.recheckButton = recheckBtn
+
         // Continue button (hidden until granted)
         let contBtn = NSButton(title: L("Continue"), target: self, action: #selector(continueClicked))
         contBtn.bezelStyle = .rounded
@@ -162,6 +178,17 @@ class PermissionOnboardingController: NSWindowController {
         contBtn.translatesAutoresizingMaskIntoConstraints = false
         cv.addSubview(contBtn)
         self.continueButton = contBtn
+
+        // Restart button (shown when the grant exists but this process started
+        // before it, which is the normal case for a permission granted mid-run).
+        let restartBtn = NSButton(title: L("Restart macshot"), target: self, action: #selector(restartClicked))
+        restartBtn.bezelStyle = .rounded
+        restartBtn.controlSize = .large
+        restartBtn.isHidden = true
+        restartBtn.keyEquivalent = "\r"
+        restartBtn.translatesAutoresizingMaskIntoConstraints = false
+        cv.addSubview(restartBtn)
+        self.restartButton = restartBtn
 
         // Image aspect ratio: 1405 × 892
         let imgAspect: CGFloat = 892.0 / 1405.0
@@ -203,14 +230,24 @@ class PermissionOnboardingController: NSWindowController {
             statusLbl.centerYAnchor.constraint(equalTo: stepBox.centerYAnchor),
 
             openBtn.topAnchor.constraint(equalTo: stepBox.bottomAnchor, constant: 14),
-            openBtn.centerXAnchor.constraint(equalTo: cv.centerXAnchor),
-            openBtn.widthAnchor.constraint(equalToConstant: 260),
+            openBtn.leadingAnchor.constraint(equalTo: cv.leadingAnchor, constant: 20),
             openBtn.bottomAnchor.constraint(equalTo: cv.bottomAnchor, constant: -20),
+
+            recheckBtn.topAnchor.constraint(equalTo: stepBox.bottomAnchor, constant: 14),
+            recheckBtn.leadingAnchor.constraint(equalTo: openBtn.trailingAnchor, constant: 10),
+            recheckBtn.trailingAnchor.constraint(equalTo: cv.trailingAnchor, constant: -20),
+            recheckBtn.bottomAnchor.constraint(equalTo: cv.bottomAnchor, constant: -20),
+            recheckBtn.widthAnchor.constraint(equalTo: openBtn.widthAnchor),
 
             contBtn.topAnchor.constraint(equalTo: stepBox.bottomAnchor, constant: 14),
             contBtn.centerXAnchor.constraint(equalTo: cv.centerXAnchor),
             contBtn.widthAnchor.constraint(equalToConstant: 260),
             contBtn.bottomAnchor.constraint(equalTo: cv.bottomAnchor, constant: -20),
+
+            restartBtn.topAnchor.constraint(equalTo: stepBox.bottomAnchor, constant: 14),
+            restartBtn.centerXAnchor.constraint(equalTo: cv.centerXAnchor),
+            restartBtn.widthAnchor.constraint(equalToConstant: 260),
+            restartBtn.bottomAnchor.constraint(equalTo: cv.bottomAnchor, constant: -20),
         ])
     }
 
@@ -229,11 +266,20 @@ class PermissionOnboardingController: NSWindowController {
         statusLabel?.stringValue = L("Screen Recording not yet granted")
         statusLabel?.textColor = .secondaryLabelColor
         actionButton?.isHidden = false
+        recheckButton?.isHidden = false
         continueButton?.isHidden = true
+        restartButton?.isHidden = true
 
         window?.center()
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+
+        // Register with TCC on the spot: the entry in Privacy & Security →
+        // Screen Recording only appears after the app asks for the permission
+        // at least once, and a user who opens that pane by hand would otherwise
+        // find an empty list and have to add macshot with the "+" button.
+        requestPermissionFromSystem()
+
         startPolling()
     }
 
@@ -249,13 +295,76 @@ class PermissionOnboardingController: NSWindowController {
     }
 
     private func checkPermission() {
-        guard !permissionGranted else { return }
-        if CGPreflightScreenCaptureAccess() {
-            permissionGranted = true
-            pollTimer?.invalidate()
-            pollTimer = nil
-            showGranted()
+        guard !permissionGranted, !isVerifying else { return }
+        guard CGPreflightScreenCaptureAccess() else { return }
+        pollTimer?.invalidate()
+        pollTimer = nil
+        verifyGrant { [weak self] usable in
+            guard let self else { return }
+            if usable {
+                self.permissionGranted = true
+                self.showGranted()
+            } else {
+                // The switch in System Settings is on but this process still
+                // cannot capture — macOS only applies the grant to a new process.
+                self.showRestartRequired()
+            }
         }
+    }
+
+    /// Asks ScreenCaptureKit for the shareable content list. This is the only
+    /// honest check: `CGPreflightScreenCaptureAccess()` reports "on" as soon as
+    /// the switch flips, while an actual capture keeps failing until macshot is
+    /// restarted (and it also reports "on" for a stale entry left behind by a
+    /// differently signed build).
+    private func verifyGrant(completion: @escaping (Bool) -> Void) {
+        isVerifying = true
+        Task { @MainActor in
+            defer { self.isVerifying = false }
+            do {
+                _ = try await SCShareableContent.excludingDesktopWindows(
+                    false, onScreenWindowsOnly: true)
+                completion(true)
+            } catch {
+                completion(false)
+            }
+        }
+    }
+
+    /// Manual re-check: the poll already does this, but the button gives the
+    /// user something to press right after flipping the switch, and it reports
+    /// back instead of silently doing nothing.
+    @objc private func checkAgainClicked() {
+        guard !isVerifying else { return }
+        spinner?.isHidden = false
+        spinner?.startAnimation(nil)
+        checkmark?.isHidden = true
+        statusLabel?.stringValue = L("Checking…")
+        statusLabel?.textColor = .secondaryLabelColor
+        verifyGrant { [weak self] usable in
+            guard let self else { return }
+            if usable {
+                self.permissionGranted = true
+                self.showGranted()
+            } else if CGPreflightScreenCaptureAccess() {
+                self.showRestartRequired()
+            } else {
+                self.showNotGranted()
+            }
+        }
+    }
+
+    private func showNotGranted() {
+        spinner?.isHidden = false
+        spinner?.startAnimation(nil)
+        checkmark?.isHidden = true
+        statusLabel?.stringValue = L("Screen Recording not yet granted")
+        statusLabel?.textColor = .secondaryLabelColor
+        actionButton?.isHidden = false
+        recheckButton?.isHidden = false
+        continueButton?.isHidden = true
+        restartButton?.isHidden = true
+        startPolling()
     }
 
     /// Check screen recording permission without triggering a system dialog.
@@ -278,6 +387,8 @@ class PermissionOnboardingController: NSWindowController {
         statusLabel?.stringValue = L("Screen Recording granted!")
         statusLabel?.textColor = .systemGreen
         actionButton?.isHidden = true
+        recheckButton?.isHidden = true
+        restartButton?.isHidden = true
         continueButton?.isHidden = false
         continueButton?.keyEquivalent = "\r"
 
@@ -287,18 +398,55 @@ class PermissionOnboardingController: NSWindowController {
         }
     }
 
+    /// The switch is on but this process cannot capture yet. macOS applies the
+    /// screen-recording grant to the next launch, so the only way forward is a
+    /// restart — say so instead of pretending everything is fine.
+    private func showRestartRequired() {
+        pollTimer?.invalidate()
+        pollTimer = nil
+        spinner?.stopAnimation(nil)
+        spinner?.isHidden = true
+        checkmark?.isHidden = true
+        statusLabel?.stringValue = L("Screen Recording is allowed. Restart macshot to start capturing.")
+        statusLabel?.textColor = .labelColor
+        actionButton?.isHidden = true
+        recheckButton?.isHidden = true
+        continueButton?.isHidden = true
+        restartButton?.isHidden = false
+        restartButton?.keyEquivalent = "\r"
+    }
+
+    @objc private func restartClicked() {
+        pollTimer?.invalidate()
+        pollTimer = nil
+        window?.orderOut(nil)
+        AppDelegate.relaunchApp()
+    }
+
+    /// Asks TCC for the permission. This call is what registers macshot in
+    /// Privacy & Security → Screen Recording; without it the list stays empty
+    /// and the only way in is the "+" button, which most users never find. The
+    /// native dialog it raises is the system's own consent prompt, so it is not
+    /// "redundant" — it is the registration step. Kept off the main thread in
+    /// case the system decides to run the prompt synchronously.
+    private func requestPermissionFromSystem() {
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = CGRequestScreenCaptureAccess()
+        }
+    }
+
     // MARK: - Actions
 
     @objc private func openSettings() {
+        requestPermissionFromSystem()
+
         // Deep-link directly to Privacy & Security → Screen Recording.
-        // macOS will add macshot to the list automatically when it first
-        // attempts a capture — no CGRequestScreenCaptureAccess() call needed
-        // (that API shows the redundant native dialog we want to avoid).
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
             NSWorkspace.shared.open(url)
         }
 
         statusLabel?.stringValue = L("Enable macshot, then try taking a screenshot")
+        startPolling()
     }
 
     @objc private func continueClicked() {

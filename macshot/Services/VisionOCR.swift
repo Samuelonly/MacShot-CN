@@ -41,6 +41,27 @@ enum VisionOCR {
         cgImage: CGImage,
         completionHandler: @escaping (OCRScanResult) -> Void
     ) {
+        // A configured cloud service is read instead. QR detection stays
+        // local, and a failed request falls back to Vision so a capture
+        // never ends with no text at all.
+        if OCREngine.usesCloud {
+            CloudOCR.recognize(cgImage: cgImage) { result in
+                switch result {
+                case .success(let text):
+                    completionHandler(OCRScanResult(text: text, qrCodes: detectQRCodes(cgImage: cgImage)))
+                case .failure:
+                    recognizeLocally(cgImage: cgImage, completionHandler: completionHandler)
+                }
+            }
+            return
+        }
+        recognizeLocally(cgImage: cgImage, completionHandler: completionHandler)
+    }
+
+    nonisolated private static func recognizeLocally(
+        cgImage: CGImage,
+        completionHandler: @escaping (OCRScanResult) -> Void
+    ) {
         performTextRecognition(cgImage: cgImage) { observations, _ in
             let text = observations.map(\.text).joined(separator: "\n")
             let qrCodes = detectQRCodes(cgImage: cgImage)

@@ -857,3 +857,68 @@
 "Sway" = "Ayunan";
 
 "Snap webcam to corners when moved" = "Tempelkan webcam ke sudut saat dipindahkan";
+
+/* Untranslated: English source text until a translator picks it up. */
+"From" = "From";
+"Custom service (your key)" = "Custom service (your key)";
+"Google Translate (unofficial)" = "Google Translate (unofficial)";
+"OpenAI-compatible API" = "OpenAI-compatible API";
+"HTTP template" = "HTTP template";
+"Request:" = "Request:";
+"Base URL:" = "Base URL:";
+"Model:" = "Model:";
+"Prompt:" = "Prompt:";
+"Method:" = "Method:";
+"URL:" = "URL:";
+"Headers:" = "Headers:";
+"Body:" = "Body:";
+"Response path:" = "Response path:";
+"Timeout:" = "Timeout:";
+"API key (stored in Keychain)" = "API key (stored in Keychain)";
+"Key saved; type to replace" = "Key saved; type to replace";
+"System prompt; {{to}} becomes the target language" = "System prompt; {{to}} becomes the target language";
+"Model, like gpt-4o-mini" = "Model, like gpt-4o-mini";
+"Timeout in seconds" = "Timeout in seconds";
+"Testing…" = "Testing…";
+"Connected. “Hello” → “%@” in %.1f s." = "Connected. “Hello” → “%@” in %.1f s.";
+"Could not build a test image." = "Could not build a test image.";
+"Connected, but the service returned no text." = "Connected, but the service returned no text.";
+"Connected. Read: “%@”" = "Connected. Read: “%@”";
+"Your key is kept in the Keychain and is never included in settings backups." = "Your key is kept in the Keychain and is never included in settings backups.";
+"The image is sent as base64. Use {{imageBase64}} in the URL, headers or body, and {{imageMime}} for the type." = "The image is sent as base64. Use {{imageBase64}} in the URL, headers or body, and {{imageMime}} for the type.";
+"Could not encode the image for OCR." = "Could not encode the image for OCR.";
+"Local Vision (on-device)" = "Local Vision (on-device)";
+"Custom cloud OCR (your key)" = "Custom cloud OCR (your key)";
+"OCR Engine:" = "OCR Engine:";
+"Bring your own service: any OpenAI-compatible API, or a service with its own HTTP and JSON shape. Apple translation works offline; the Google option uses an unofficial endpoint and can be unstable." = "Bring your own service: any OpenAI-compatible API, or a service with its own HTTP and JSON shape. Apple translation works offline; the Google option uses an unofficial endpoint and can be unstable.";
+"No translation service is configured. Add your own provider in Settings › Capture › Translation." = "No translation service is configured. Add your own provider in Settings › Capture › Translation.";
+"The API key is invalid or has no permission for this service." = "The API key is invalid or has no permission for this service.";
+"The service is rate limiting requests. Try again in a moment." = "The service is rate limiting requests. Try again in a moment.";
+"The request timed out." = "The request timed out.";
+"The service returned HTTP %d." = "The service returned HTTP %d.";
+"The response did not match the configured response path." = "The response did not match the configured response path.";
+"No network connection." = "No network connection.";
+"The Base URL is not a valid address." = "The Base URL is not a valid address.";
+"The request URL is not valid." = "The request URL is not valid.";
+"The response did not contain the configured response path." = "The response did not contain the configured response path.";
+
+/* Untranslated: English source text until a translator picks it up. */
+"Check Again" = "Check Again";
+"Checking…" = "Checking…";
+"Screen Recording is allowed. Restart macshot to start capturing." = "Screen Recording is allowed. Restart macshot to start capturing.";
+"Restart macshot" = "Restart macshot";
+
+/* Untranslated: English source text until a translator picks it up. */
+"Tencent Cloud TMT" = "Tencent Cloud TMT";
+"Youdao Translate" = "Youdao Translate";
+"App secret (stored in Keychain)" = "App secret (stored in Keychain)";
+"App secret:" = "App secret:";
+"Secret saved; type to replace" = "Secret saved; type to replace";
+"Youdao returned error %@." = "Youdao returned error %@.";
+"This engine only translates text; it cannot read images." = "This engine only translates text; it cannot read images.";
+
+"Custom API" = "Custom API";
+"Google Gemini" = "Google Gemini";
+"DeepL" = "DeepL";
+"Volcengine Translate" = "Volcengine Translate";
+"DeepL API key (stored in Keychain)" = "DeepL API key (stored in Keychain)";
