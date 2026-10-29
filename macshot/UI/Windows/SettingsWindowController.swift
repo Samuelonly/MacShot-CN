@@ -236,16 +236,17 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
 
         // Footer: this fork is made by Samuelonly, built from sw33tLie's
         // original macshot. Both links stay clickable, so the credit is clear.
+        let forkURL = "github.com/Samuelonly/MacShot-CN"
         let madeBy = NSTextField(labelWithString: "\(L("Made by")) Samuelonly")
         madeBy.font = NSFont.systemFont(ofSize: 11)
         madeBy.textColor = .secondaryLabelColor
         madeBy.translatesAutoresizingMaskIntoConstraints = false
 
-        let linkBtn = NSButton(title: "github.com/Samuelonly", target: self, action: #selector(openGitHub))
+        let linkBtn = NSButton(title: forkURL, target: self, action: #selector(openGitHub))
         linkBtn.bezelStyle = .inline
         linkBtn.isBordered = false
         linkBtn.font = NSFont.systemFont(ofSize: 11)
-        linkBtn.attributedTitle = NSAttributedString(string: "github.com/Samuelonly", attributes: [
+        linkBtn.attributedTitle = NSAttributedString(string: forkURL, attributes: [
             .font: NSFont.systemFont(ofSize: 11),
             .foregroundColor: NSColor.linkColor,
             .underlineStyle: NSUnderlineStyle.single.rawValue,
@@ -2937,7 +2938,7 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
         LanguageManager.shared.currentLanguage = languages[idx].code
     }
     @objc private func openGitHub() {
-        if let url = URL(string: "https://github.com/Samuelonly") { NSWorkspace.shared.open(url) }
+        if let url = URL(string: "https://github.com/Samuelonly/MacShot-CN") { NSWorkspace.shared.open(url) }
     }
     @objc private func openUpstreamGitHub() {
         if let url = URL(string: "https://github.com/sw33tLie/macshot") { NSWorkspace.shared.open(url) }

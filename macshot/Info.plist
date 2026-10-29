@@ -52,7 +52,7 @@
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>macshot transcribes your recordings on this Mac to create captions. Audio is not uploaded.</string>
 	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/sw33tLie/macshot/main/appcast.xml</string>
+	<string>https://raw.githubusercontent.com/Samuelonly/MacShot-CN/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>+5RTT9lGyoeOYAYuNfCdPhxugmruYvRDyFXgk6VPY1c=</string>
 	<key>SUScheduledCheckInterval</key>
