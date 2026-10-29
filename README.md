@@ -1,8 +1,22 @@
-# macshot
+# macshot（中文增强版 · MacShot-CN）
 
-> [!IMPORTANT]
-> **Upgrading to a 4.4.0 beta from 4.3.x or beta.1/beta.2?** macshot's developer signature changed in beta.3, so macOS may require you to grant permissions again. If Screen Recording looks enabled but capture fails, remove macshot with the minus button (−) in System Settings, then add it back from Applications with the plus button (+). Re-enable Accessibility or Input Monitoring if prompted. Your settings, history and recordings are preserved. If you already restored permissions in beta.3 or later, you should not need to repeat this.
+> **这是 [sw33tLie/macshot](https://github.com/sw33tLie/macshot) 的中文修改版。**
+> 原版的 OCR 与翻译调用 Google，在国内又慢又经常不可用。本版把这两条链路改成可自填密钥的第三方 API：OpenAI 兼容接口、Google Gemini、DeepL、腾讯云机器翻译、有道翻译、火山翻译，以及通用 HTTP 模板。OCR 也走同一套供应商列表，腾讯云可直接识别图片。
 
+<p align="center">
+  <img src="assets/fork-translation.png" alt="翻译引擎：自定义 API，可切换 OpenAI 兼容 / Gemini / DeepL / 腾讯 / 有道 / 火山 / HTTP 模板" width="390"/>
+  <img src="assets/fork-ocr.png" alt="OCR 引擎沿用同一套供应商列表" width="390"/>
+</p>
+
+### 与上游的差异
+
+- **自带密钥（BYOK）** —— 翻译与 OCR 各有一套独立配置：引擎、Base URL、区域、密钥、超时（1–10 秒，默认 3 秒），并可一键测试连通性。密钥保存在本机的 `~/Library/Application Support/macshot/ai-secrets.json`（权限 0600），不写进设置备份。
+- **腾讯云** —— 翻译走 TMT（TC3-HMAC-SHA256 签名），OCR 走 `GeneralBasicOCR`；自动压在每秒 4 次的官方频率上限内，撞限会退避重试。
+- **有道 / 火山 / DeepL** —— 各自的原生签名与协议，不依赖第三方中转。
+- **国内可用** —— 不再依赖 Google 的翻译与 OCR 端点。
+- **界面** —— 设置窗口加宽到 700pt，顶部页签居中，长中文文案不再溢出。
+
+---
 <p align="center">
   <img src="assets/logo.svg" alt="macshot logo" width="200"/>
 </p>
@@ -15,7 +29,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/sw33tLie/macshot/releases/latest">Download</a> · <a href="https://github.com/sw33tLie/macshot/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/sw33tLie/macshot/blob/main/PRIVACY.md">Privacy</a> · <a href="https://github.com/sw33tLie/macshot/blob/main/SECURITY.md">Security</a>
+  <a href="https://github.com/Samuelonly/MacShot-CN/releases/latest">Download</a> · <a href="https://github.com/sw33tLie/macshot/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/sw33tLie/macshot/blob/main/PRIVACY.md">Privacy</a> · <a href="https://github.com/sw33tLie/macshot/blob/main/SECURITY.md">Security</a>
 </p>
 
 <p align="center">
