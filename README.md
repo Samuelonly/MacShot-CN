@@ -16,6 +16,34 @@
 - **国内可用** —— 不再依赖 Google 的翻译与 OCR 端点。
 - **界面** —— 设置窗口加宽到 700pt，顶部页签居中，长中文文案不再溢出。
 
+### 想接自己的服务？
+
+**大多数情况不用改代码。** 翻译和 OCR 的引擎下拉里都有「HTTP 模板」这一项，把对方接口的 Method、URL、Headers、Body 和响应路径填进去就行，用这几个占位符做插值：
+
+| 占位符 | 含义 |
+| --- | --- |
+| `{{text}}` | 待翻译的原文 |
+| `{{key}}` | 本页填的密钥 |
+| `{{to}}` / `{{from}}` | 目标 / 源语言代码，`from` 为 `auto` 时表示自动识别 |
+| `{{imageBase64}}` | 截图的 base64（OCR 用） |
+| `{{imageMime}}` | 图片类型，通常是 `image/png` |
+
+比如某家服务要这样的请求体：
+
+```json
+{ "q": "{{text}}", "target": "{{to}}", "key": "{{key}}" }
+```
+
+响应路径用点号表示，比如 `data.translations.0.text`，就能把结果取出来。只要对方是同步的 JSON 接口，不写一行 Swift 也能接上。
+
+**想原生支持一家厂商**（需要签名、特殊编码或批量协议）才要改源码，三步：
+
+1. 在 `macshot/Services/AIProvider.swift` 的 `Mode` 里加一个 case 和 `title`，并加进 `orderedCases`；
+2. 写一个 `sendXxx` 发送函数，在 `translate` 和 `recognizeText` 两个 switch 里各加一条分支；
+3. 在 `en.lproj` / `zh-Hans.lproj` 的 `Localizable.strings` 补上引擎名字，缺了会被 `LocalizationTests` 拦下。
+
+配置界面对翻译和 OCR 是同一个组件（`AIProviderEditor`），所以加一个引擎，两处下拉会自动同步。
+
 ---
 <p align="center">
   <img src="assets/logo.svg" alt="macshot logo" width="200"/>
