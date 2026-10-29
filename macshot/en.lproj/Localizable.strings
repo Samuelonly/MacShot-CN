@@ -876,8 +876,8 @@
 "Tencent Cloud TMT" = "Tencent Cloud TMT";
 "Youdao Translate" = "Youdao Translate";
 "Volcengine Translate" = "Volcengine Translate";
-"DeepL API key (stored in Keychain)" = "DeepL API key (stored in Keychain)";
-"App secret (stored in Keychain)" = "App secret (stored in Keychain)";
+"DeepL API key (stored in Keychain)" = "DeepL API key (saved on this Mac)";
+"App secret (stored in Keychain)" = "App secret (saved on this Mac)";
 "App secret:" = "App secret:";
 "Secret saved; type to replace" = "Secret saved; type to replace";
 "Youdao returned error %@." = "Youdao returned error %@.";
@@ -894,7 +894,7 @@
 "Body:" = "Body:";
 "Response path:" = "Response path:";
 "Timeout:" = "Timeout:";
-"API key (stored in Keychain)" = "API key (stored in Keychain)";
+"API key (stored in Keychain)" = "API key (saved on this Mac)";
 "Key saved; type to replace" = "Key saved; type to replace";
 "System prompt; {{to}} becomes the target language" = "System prompt; {{to}} becomes the target language";
 "Model, like gpt-4o-mini" = "Model, like gpt-4o-mini";
@@ -904,7 +904,7 @@
 "Could not build a test image." = "Could not build a test image.";
 "Connected, but the service returned no text." = "Connected, but the service returned no text.";
 "Connected. Read: “%@”" = "Connected. Read: “%@”";
-"Your key is kept in the Keychain and is never included in settings backups." = "Your key is kept in the Keychain and is never included in settings backups.";
+"Your key is kept in the Keychain and is never included in settings backups." = "Your key is saved outside the settings backup, so exporting settings never includes it.";
 "The image is sent as base64. Use {{imageBase64}} in the URL, headers or body, and {{imageMime}} for the type." = "The image is sent as base64. Use {{imageBase64}} in the URL, headers or body, and {{imageMime}} for the type.";
 "Could not encode the image for OCR." = "Could not encode the image for OCR.";
 "Local Vision (on-device)" = "Local Vision (on-device)";

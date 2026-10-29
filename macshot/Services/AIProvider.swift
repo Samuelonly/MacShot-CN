@@ -1,42 +1,55 @@
 import Foundation
-import Security
 import CryptoKit
 
 // MARK: - Keys
 
-/// API keys live in the Keychain, never in UserDefaults: Settings Backup
-/// exports UserDefaults, and a key must not leave the Mac in that file.
-enum KeychainStore {
-    private static let service = "com.sw33tlie.macshot.ai"
+/// API keys are kept in a 0600 file under Application Support, never in
+/// UserDefaults: Settings Backup exports UserDefaults, and a key must not
+/// leave the Mac in that file. The Keychain was tried first, but every
+/// rebuild re-signs the app, so macOS then asked for the login password on
+/// launch and blocked the main thread. A file has no such prompt.
+enum SecretStore {
+    private static let lock = NSLock()
+
+    private static var directory: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("macshot", isDirectory: true)
+    }
+    private static var fileURL: URL { directory.appendingPathComponent("ai-secrets.json") }
 
     static func set(_ value: String?, account: String) {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-        ]
-        SecItemDelete(query as CFDictionary)
-        guard let value, !value.isEmpty else { return }
-        var item = query
-        item[kSecValueData as String] = Data(value.utf8)
-        item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-        SecItemAdd(item as CFDictionary, nil)
+        lock.lock()
+        defer { lock.unlock() }
+        var secrets = load()
+        if let value, !value.isEmpty {
+            secrets[account] = value
+        } else {
+            secrets.removeValue(forKey: account)
+        }
+        save(secrets)
     }
 
     static func value(account: String) -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-        var result: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
-              let data = result as? Data,
-              let string = String(data: data, encoding: .utf8),
-              !string.isEmpty else { return nil }
-        return string
+        lock.lock()
+        defer { lock.unlock() }
+        return load()[account]
+    }
+
+    private static func load() -> [String: String] {
+        guard let data = try? Data(contentsOf: fileURL),
+              let secrets = try? JSONDecoder().decode([String: String].self, from: data) else {
+            return [:]
+        }
+        return secrets
+    }
+
+    private static func save(_ secrets: [String: String]) {
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
+                                                attributes: [.posixPermissions: 0o700])
+        guard let data = try? JSONEncoder().encode(secrets) else { return }
+        try? data.write(to: fileURL, options: .atomic)
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600],
+                                              ofItemAtPath: fileURL.path)
     }
 }
 
@@ -107,13 +120,13 @@ struct AIProviderConfig: Codable, Equatable {
     var region = "ap-guangzhou"
 
     var apiKey: String {
-        get { KeychainStore.value(account: role.keyAccount) ?? "" }
-        set { KeychainStore.set(newValue, account: role.keyAccount) }
+        get { SecretStore.value(account: role.keyAccount) ?? "" }
+        set { SecretStore.set(newValue, account: role.keyAccount) }
     }
 
     var apiSecret: String {
-        get { KeychainStore.value(account: role.secretAccount) ?? "" }
-        set { KeychainStore.set(newValue, account: role.secretAccount) }
+        get { SecretStore.value(account: role.secretAccount) ?? "" }
+        set { SecretStore.set(newValue, account: role.secretAccount) }
     }
 
     private var role: Role {
@@ -124,7 +137,7 @@ struct AIProviderConfig: Codable, Equatable {
     private var storedRole = Role.translation.rawValue
 
     func isConfigured(_ role: Role) -> Bool {
-        let key = KeychainStore.value(account: role.keyAccount) ?? ""
+        let key = SecretStore.value(account: role.keyAccount) ?? ""
         switch mode {
         case .openAI:
             guard !baseURL.trimmingCharacters(in: .whitespaces).isEmpty,
@@ -135,7 +148,7 @@ struct AIProviderConfig: Codable, Equatable {
         case .tencent, .youdao, .volcengine:
             // These vendors sign each request with the second credential, so a
             // lone key is not enough to make a call.
-            let secret = KeychainStore.value(account: role.secretAccount) ?? ""
+            let secret = SecretStore.value(account: role.secretAccount) ?? ""
             return !key.isEmpty && !secret.isEmpty
         case .gemini, .deepl:
             return !key.isEmpty

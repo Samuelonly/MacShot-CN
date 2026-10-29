@@ -877,8 +877,8 @@
 "Tencent Cloud TMT" = "腾讯云机器翻译（翻译君）";
 "Youdao Translate" = "有道翻译";
 "Volcengine Translate" = "火山翻译";
-"DeepL API key (stored in Keychain)" = "DeepL API Key（保存在钥匙串）";
-"App secret (stored in Keychain)" = "应用密钥（保存在钥匙串）";
+"DeepL API key (stored in Keychain)" = "DeepL API Key（保存在本机）";
+"App secret (stored in Keychain)" = "应用密钥（保存在本机）";
 "App secret:" = "应用密钥:";
 "Secret saved; type to replace" = "密钥已保存；输入即替换";
 "Youdao returned error %@." = "有道返回错误 %@。";
@@ -895,7 +895,7 @@
 "Body:" = "请求体：";
 "Response path:" = "响应路径：";
 "Timeout:" = "超时：";
-"API key (stored in Keychain)" = "API Key（保存在钥匙串）";
+"API key (stored in Keychain)" = "API 密钥（保存在本机）";
 "Key saved; type to replace" = "Key 已保存，输入可替换";
 "System prompt; {{to}} becomes the target language" = "系统提示词；{{to}} 会替换为目标语言";
 "Model, like gpt-4o-mini" = "模型，例如 gpt-4o-mini";
@@ -905,7 +905,7 @@
 "Could not build a test image." = "无法生成测试图片。";
 "Connected, but the service returned no text." = "连接成功，但服务没有返回文字。";
 "Connected. Read: “%@”" = "连接成功，识别到：“%@”";
-"Your key is kept in the Keychain and is never included in settings backups." = "Key 保存在钥匙串，不会写进设置备份。";
+"Your key is kept in the Keychain and is never included in settings backups." = "密钥保存在设置备份之外，导出设置不会包含密钥。";
 "The image is sent as base64. Use {{imageBase64}} in the URL, headers or body, and {{imageMime}} for the type." = "图片以 base64 发送。可在 URL、请求头或请求体中使用 {{imageBase64}}，类型用 {{imageMime}}。";
 "Could not encode the image for OCR." = "无法编码图片用于 OCR。";
 "Local Vision (on-device)" = "本地 Vision（离线）";
