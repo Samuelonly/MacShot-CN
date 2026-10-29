@@ -329,6 +329,25 @@ enum AIProvider {
         }
     }
 
+    // MARK: Tencent rate limiting
+
+    /// One serial queue for every Tencent call (TMT and OCR share the quota).
+    private static let tencentQueue = DispatchQueue(label: "com.sw33tlie.macshot.tencent",
+                                                    qos: .utility)
+    private static let tencentSlotLock = NSLock()
+    private static var tencentLastCall = Date.distantPast
+
+    /// Waits until 300 ms have passed since the previous call, which keeps the
+    /// app under the 4-per-second vendor limit.
+    private static func waitForTencentSlot() {
+        tencentSlotLock.lock()
+        defer { tencentSlotLock.unlock() }
+        let gap: TimeInterval = 0.3
+        let elapsed = Date().timeIntervalSince(tencentLastCall)
+        if elapsed < gap { Thread.sleep(forTimeInterval: gap - elapsed) }
+        tencentLastCall = Date()
+    }
+
     // MARK: Test
 
     /// Translates "Hello" and reports how long the round trip took.
@@ -490,6 +509,21 @@ enum AIProvider {
             "X-TC-Timestamp": String(timestamp),
             "X-TC-Region": region.isEmpty ? "ap-guangzhou" : region,
         ]
+        tencentQueue.async {
+            waitForTencentSlot()
+            sendTencentRequest(url: url, headers: headers, body: body, config: config,
+                               path: path, textLines: textLines, attemptsLeft: 2,
+                               completion: completion)
+        }
+    }
+
+    /// The vendor caps its APIs at 4 calls per second, and a multi-line capture
+    /// fires one call per line, so requests are serialised with a small gap and
+    /// the frequency error is retried instead of surfacing as a failure.
+    private static func sendTencentRequest(url: URL, headers: [String: String], body: Data,
+                                           config: AIProviderConfig, path: String,
+                                           textLines: Bool, attemptsLeft: Int,
+                                           completion: @escaping (Result<String, Error>) -> Void) {
         sendRequest(url: url, method: "POST", headers: headers, body: body, timeout: config.timeout) { result in
             switch result {
             case .failure(let error):
@@ -497,8 +531,20 @@ enum AIProvider {
             case .success(let json):
                 if let response = json as? [String: Any],
                    let serviceError = response["Response"] as? [String: Any],
-                   let code = serviceError["Error"] as? [String: Any],
-                   let message = code["Message"] as? String {
+                   let code = serviceError["Error"] as? [String: Any] {
+                    let message = (code["Message"] as? String) ?? ""
+                    let reason = (code["Code"] as? String) ?? ""
+                    let rateLimited = reason == "RequestLimitExceeded"
+                        || message.lowercased().contains("frequency limit")
+                    if rateLimited, attemptsLeft > 0 {
+                        tencentQueue.asyncAfter(deadline: .now() + 1.2) {
+                            sendTencentRequest(url: url, headers: headers, body: body,
+                                               config: config, path: path, textLines: textLines,
+                                               attemptsLeft: attemptsLeft - 1,
+                                               completion: completion)
+                        }
+                        return
+                    }
                     finish(.failure(AIProviderError.invalidResponse(message)), completion)
                     return
                 }
