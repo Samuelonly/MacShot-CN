@@ -83,12 +83,21 @@
 
 ## Install
 
-**Homebrew:**
+**Manual:** 从 [Releases](https://github.com/Samuelonly/MacShot-CN/releases) 下载 `macshot-CN-3.5.3.dmg`，打开后把 `macshot.app` 拖进「应用程序」。
+
+**首次打开可能被拦。** 本版没有付费的 Apple 开发者账号，所以不做公证（notarization）。如果系统提示「无法验证开发者」：
+
+1. 到「系统设置 → 隐私与安全性」，在底部点「仍要打开」；
+2. 或者右键点 `macshot.app` 选「打开」；
+3. 或者在终端里去掉隔离标记：
+
 ```bash
-brew install --cask macshot
+xattr -dr com.apple.quarantine /Applications/macshot.app
 ```
 
-**Manual:** Download the latest `.dmg` from [Releases](https://github.com/sw33tLie/macshot/releases), open it, drag to `/Applications`.
+启动后按提示授予「屏幕录制」权限。授权记录绑定在代码签名上，本版之后的升级不会重复要求。
+
+> 应用内的「检查更新」指向本仓库，更新包已用本仓库自己的 Sparkle 密钥签名，走 app 内下载，一般不会再触发上面这道 Gatekeeper 提示。
 
 ---
 
