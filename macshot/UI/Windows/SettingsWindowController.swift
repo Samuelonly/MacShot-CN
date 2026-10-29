@@ -297,8 +297,14 @@ class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSWindowD
             footerStack.heightAnchor.constraint(equalToConstant: 20),
         ])
 
-        // Show initial tab
+        // Show initial tab. The toolbar builds its items lazily, so the first
+        // selection has to be re-applied once they exist — otherwise AppKit
+        // falls back to the last tab and opens About.
         showTab(id: "general")
+        DispatchQueue.main.async { [weak self] in
+            self?.window?.toolbar?.selectedItemIdentifier = NSToolbarItem.Identifier("general")
+            self?.showTab(id: "general")
+        }
     }
 
     private func showTab(id: String) {
