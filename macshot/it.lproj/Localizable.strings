@@ -905,3 +905,6 @@
 "DeepL" = "DeepL";
 "Volcengine Translate" = "Volcengine Translate";
 "DeepL API key (stored in Keychain)" = "DeepL API key (stored in Keychain)";
+
+"(text only)" = "(text only)";
+"The service returned no text for this image." = "The service returned no text for this image.";

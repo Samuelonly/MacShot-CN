@@ -63,7 +63,7 @@ final class AIProviderEditor: NSView {
 
         stack.alignment = .leading
 
-        modePopup.addItems(withTitles: modes.map(\.title))
+        modePopup.addItems(withTitles: modes.map { title(for: $0) })
         modePopup.target = self
         modePopup.action = #selector(modeChanged)
         // Rows fill the editor width; controls keep their natural size.
@@ -191,6 +191,15 @@ final class AIProviderEditor: NSView {
 
     @objc private func modeChanged() { updateMode(animated: true) }
 
+    /// Engines that only do text are marked as such in the OCR pop-up, so
+    /// nobody picks DeepL and then wonders why the image is not read.
+    private func title(for mode: AIProviderConfig.Mode) -> String {
+        guard role == .ocr, mode == .deepl || mode == .youdao || mode == .volcengine else {
+            return mode.title
+        }
+        return "\(mode.title) \(L("(text only)"))"
+    }
+
     private func selectedMode() -> AIProviderConfig.Mode {
         guard modes.indices.contains(modePopup.indexOfSelectedItem) else { return .openAI }
         return modes[modePopup.indexOfSelectedItem]
@@ -220,11 +229,26 @@ final class AIProviderEditor: NSView {
             regionField.stringValue = "ap-guangzhou"
         }
 
+        // OCR and translation are different Tencent services. Swap our own
+        // default over instead of leaving a TMT host on an OCR request (the
+        // host is part of the TC3 signature, so the call would fail).
+        let baseURL = baseURLField.stringValue.trimmingCharacters(in: .whitespaces)
+        if mode == .tencent {
+            if role == .ocr, baseURL == "https://tmt.tencentcloudapi.com" {
+                baseURLField.stringValue = "https://ocr.tencentcloudapi.com"
+            } else if role == .translation, baseURL == "https://ocr.tencentcloudapi.com" {
+                baseURLField.stringValue = "https://tmt.tencentcloudapi.com"
+            }
+        }
+
         switch mode {
         case .openAI: baseURLField.placeholderString = "https://api.openai.com/v1"
         case .gemini: modelField.placeholderString = "gemini-2.0-flash"
         case .deepl: keyField.placeholderString = L("DeepL API key (stored in Keychain)")
-        case .tencent: baseURLField.placeholderString = "https://tmt.tencentcloudapi.com"
+        case .tencent:
+            baseURLField.placeholderString = role == .ocr
+                ? "https://ocr.tencentcloudapi.com"
+                : "https://tmt.tencentcloudapi.com"
         case .youdao: baseURLField.placeholderString = "https://openapi.youdao.com/api"
         case .volcengine: regionField.placeholderString = "cn-north-1"
         case .template: break

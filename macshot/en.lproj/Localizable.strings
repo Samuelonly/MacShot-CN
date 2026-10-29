@@ -882,6 +882,8 @@
 "Secret saved; type to replace" = "Secret saved; type to replace";
 "Youdao returned error %@." = "Youdao returned error %@.";
 "This engine only translates text; it cannot read images." = "This engine only translates text; it cannot read images.";
+"(text only)" = "(text only)";
+"The service returned no text for this image." = "The service returned no text for this image.";
 "Request:" = "Request:";
 "Base URL:" = "Base URL:";
 "Model:" = "Model:";

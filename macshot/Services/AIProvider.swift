@@ -305,7 +305,12 @@ enum AIProvider {
                        prompt: "Extract all text from this image. Reply with the text only, preserving line breaks.",
                        completion: completion)
 
-        case .tencent, .youdao, .volcengine, .deepl:
+        case .tencent:
+            // Tencent Cloud OCR is a different service from TMT: same key,
+            // different host and a different signing scope.
+            sendTencentOCR(config: config, pngBase64: pngBase64, completion: completion)
+
+        case .youdao, .volcengine, .deepl:
             completion(.failure(AIProviderError.invalidResponse(
                 L("This engine only translates text; it cannot read images."))))
         }
@@ -388,6 +393,40 @@ enum AIProvider {
     /// HMAC chain secretKey → date → service → "tc3_request".
     private static func sendTencent(config: AIProviderConfig, text: String, target: String,
                                     completion: @escaping (Result<String, Error>) -> Void) {
+        let payload: [String: Any] = [
+            "SourceText": text,
+            "Source": "auto",
+            "Target": tencentLanguage(target),
+            "ProjectId": 0,
+        ]
+        sendTencentSigned(config: config, service: "tmt", action: "TextTranslate",
+                          version: "2018-03-21",
+                          defaultEndpoint: "https://tmt.tencentcloudapi.com",
+                          payload: payload, path: "Response.TargetText",
+                          completion: completion)
+    }
+
+    /// Tencent Cloud OCR. Same TC3 signing as TMT, but the service is "ocr"
+    /// and the endpoint is ocr.tencentcloudapi.com, so a TMT key and the OCR
+    /// endpoint are what a hand-written Base URL has to supply.
+    private static func sendTencentOCR(config: AIProviderConfig, pngBase64: String,
+                                       completion: @escaping (Result<String, Error>) -> Void) {
+        sendTencentSigned(config: config, service: "ocr", action: "GeneralBasicOCR",
+                          version: "2018-11-19",
+                          defaultEndpoint: "https://ocr.tencentcloudapi.com",
+                          payload: ["ImageBase64": pngBase64, "LanguageType": "auto"],
+                          path: "Response.TextDetections", textLines: true,
+                          completion: completion)
+    }
+
+    /// Signs one Tencent Cloud API call. `service` picks the scope ("tmt" for
+    /// translation, "ocr" for image text), which is part of the signature.
+    private static func sendTencentSigned(config: AIProviderConfig,
+                                          service: String, action: String, version: String,
+                                          defaultEndpoint: String,
+                                          payload: [String: Any], path: String,
+                                          textLines: Bool = false,
+                                          completion: @escaping (Result<String, Error>) -> Void) {
         let secretId = config.apiKey
         let secretKey = config.apiSecret
         guard !secretId.isEmpty, !secretKey.isEmpty else {
@@ -395,7 +434,7 @@ enum AIProvider {
             return
         }
         let trimmed = config.baseURL.trimmingCharacters(in: .whitespaces)
-        let endpoint = trimmed.isEmpty ? "https://tmt.tencentcloudapi.com" : trimmed
+        let endpoint = trimmed.isEmpty ? defaultEndpoint : trimmed
         guard let url = URL(string: endpoint), let host = url.host else {
             completion(.failure(AIProviderError.invalidResponse(L("The Base URL is not a valid address."))))
             return
@@ -408,12 +447,6 @@ enum AIProvider {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         let day = formatter.string(from: Date(timeIntervalSince1970: TimeInterval(timestamp)))
 
-        let payload: [String: Any] = [
-            "SourceText": text,
-            "Source": "auto",
-            "Target": tencentLanguage(target),
-            "ProjectId": 0,
-        ]
         guard let body = try? JSONSerialization.data(withJSONObject: payload) else {
             completion(.failure(AIProviderError.invalidResponse("")))
             return
@@ -426,11 +459,11 @@ enum AIProvider {
             canonicalHeaders, signedHeaders,
             sha256Hex(body),
         ].joined(separator: "\n")
-        let scope = "\(day)/tmt/tc3_request"
+        let scope = "\(day)/\(service)/tc3_request"
         let stringToSign = ["TC3-HMAC-SHA256", String(timestamp), scope, sha256Hex(canonicalRequest)]
             .joined(separator: "\n")
         // TC3 keys the HMAC chain with "TC3" + SecretKey, not the bare secret.
-        let signingKey = hmacSHA256(hmacSHA256(hmacSHA256(Data(("TC3" + secretKey).utf8), day), "tmt"),
+        let signingKey = hmacSHA256(hmacSHA256(hmacSHA256(Data(("TC3" + secretKey).utf8), day), service),
                                     "tc3_request")
         let signature = hmacSHA256(signingKey, stringToSign).hexString
         let authorization = "TC3-HMAC-SHA256 Credential=\(secretId)/\(scope), "
@@ -439,8 +472,8 @@ enum AIProvider {
         let headers = [
             "Content-Type": contentType,
             "Authorization": authorization,
-            "X-TC-Action": "TextTranslate",
-            "X-TC-Version": "2018-03-21",
+            "X-TC-Action": action,
+            "X-TC-Version": version,
             "X-TC-Timestamp": String(timestamp),
             "X-TC-Region": region.isEmpty ? "ap-guangzhou" : region,
         ]
@@ -456,7 +489,23 @@ enum AIProvider {
                     finish(.failure(AIProviderError.invalidResponse(message)), completion)
                     return
                 }
-                guard let value = jsonValue(at: "Response.TargetText", in: json) else {
+                if textLines {
+                    // OCR returns one entry per detected line; keep their order.
+                    guard let list = jsonValue(at: path, in: json) as? [[String: Any]] else {
+                        finish(.failure(AIProviderError.invalidResponse("")), completion)
+                        return
+                    }
+                    let lines = list.compactMap { $0["DetectedText"] as? String }
+                        .filter { !$0.isEmpty }
+                    guard !lines.isEmpty else {
+                        finish(.failure(AIProviderError.invalidResponse(
+                            L("The service returned no text for this image."))), completion)
+                        return
+                    }
+                    finish(.success(lines.joined(separator: "\n")), completion)
+                    return
+                }
+                guard let value = jsonValue(at: path, in: json) else {
                     finish(.failure(AIProviderError.invalidResponse("")), completion)
                     return
                 }
