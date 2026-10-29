@@ -54,7 +54,7 @@
 	<key>SUFeedURL</key>
 	<string>https://raw.githubusercontent.com/Samuelonly/MacShot-CN/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string>+5RTT9lGyoeOYAYuNfCdPhxugmruYvRDyFXgk6VPY1c=</string>
+	<string>pshMIOS6Mklt0qZ8GYmcu7/r16+5UamGpSKYpxvOJo0=</string>
 	<key>SUScheduledCheckInterval</key>
 	<integer>86400</integer>
 	<key>SUEnableAutomaticChecks</key>

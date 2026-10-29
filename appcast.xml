@@ -10,22 +10,28 @@
           upstream items: offering sw33tLie's 4.x builds would replace this
           fork with the original app and drop the BYOK translation/OCR work.
 
-          To publish a new build, add an item with a higher sparkle:version
-          and an <enclosure> for the release asset, signed with the Sparkle
-          EdDSA key. Until that key exists, keep SUPublicEDKey out of the
-          release and ship manually.
+          Updates are signed with this fork's own EdDSA key; the matching
+          public key is SUPublicEDKey in macshot/Info.plist. The private key
+          stays outside the repository.
         -->
         <item>
-            <title>3.5.2</title>
-            <pubDate>Wed, 29 Oct 2026 00:00:00 +0000</pubDate>
-            <sparkle:version>3.5.2</sparkle:version>
-            <sparkle:shortVersionString>3.5.2</sparkle:shortVersionString>
+            <title>3.5.3</title>
+            <pubDate>Wed, 29 Oct 2026 13:45:00 +0000</pubDate>
+            <sparkle:version>3.5.3</sparkle:version>
+            <sparkle:shortVersionString>3.5.3</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
             <description>
-                &lt;p&gt;Current MacShot-CN build: BYOK translation and OCR
-                (Gemini, DeepL, Tencent, Youdao, Volcengine, HTTP template),
-                local Vision OCR fallback, and a centred settings toolbar.&lt;/p&gt;
+                &lt;p&gt;Sparkle auto-update is now signed by this fork, so checking
+                for updates stays inside MacShot-CN. Includes BYOK translation
+                and OCR (OpenAI-compatible, Gemini, DeepL, Tencent, Youdao,
+                Volcengine, HTTP template), Tencent rate limiting with retry,
+                and a 700pt settings window with a centred toolbar.&lt;/p&gt;
             </description>
+            <enclosure
+                url="https://github.com/Samuelonly/MacShot-CN/releases/download/v3.5.3-cn.1/macshot-CN-3.5.3.dmg"
+                sparkle:edSignature="86kOzwIDYltH71YBcKxf48/eajWs6d20Qmcn4p6RntvtSIGKwruuYoS8olGkC/PWZczasBEEonHhGTE5e8xmCA=="
+                length="9851614"
+                type="application/octet-stream"/>
         </item>
     </channel>
 </rss>
